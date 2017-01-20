@@ -1,4 +1,18 @@
+package com.cemdev;
+
 import java.util.*;
+
+/*
+KRUSKAL(G):
+1 A = ∅
+2 foreach v ∈ G.V:
+3    MAKE-SET(v)
+4 foreach (u, v) in G.E ordered by weight(u, v), increasing:
+5    if FIND-SET(u) ≠ FIND-SET(v):
+6       A = A ∪ {(u, v)}
+7       UNION(u, v)
+8 return
+*/
 
 public class Kruskal {
 
@@ -31,34 +45,13 @@ public class Kruskal {
         }
     }
 
-    public static class Tree {
-        private LinkedList<Integer> nodesInTree;
-        private int totalWeight = 0;
-        public Tree() {
-            nodesInTree = new LinkedList<>();
-        }
-        public void addEdge(Edge edge) {
-            if (!nodesInTree.contains(edge.node1)) {
-                nodesInTree.add(edge.node1);
-            }
-            if (!nodesInTree.contains(edge.node2)) {
-                nodesInTree.add(edge.node2);
-            }
-        }
-        public boolean contains(Edge edge) {
-            return (!(nodesInTree.contains(edge.node1) && nodesInTree.contains(edge.node2)));
-        }
-        public void increaseTotalWeight(int weight) {
-            this.totalWeight += weight;
-
-        }
-    }
-
     public static class Graph {
         private List<Edge> edges;
         private int numOfNodes;
+        private HashSet<Integer> vertices;
         public Graph(int numOfNodes) {
             edges = new ArrayList<>();
+            vertices = new HashSet<>();
             this.numOfNodes = numOfNodes;
         }
 
@@ -66,51 +59,64 @@ public class Kruskal {
             edges.add(edge);
         }
 
-        public void sortEdges() {
+        public void sortEdges(List<Edge> edges) {
             Collections.sort(edges);
         }
 
-        public int getTotalWeight() {
-            sortEdges();
-            // trees will be filled
-            LinkedList<Tree> forest = new LinkedList<>();
-
+        public void makeSet(HashSet<Integer> vertices) {
             for (Edge edge: edges) {
+                vertices.add(edge.node1);
+                vertices.add(edge.node2);
+            }
+            // vertices made into a set
+        }
 
-                if (forest.isEmpty()) {
-                    Tree tree = new Tree();
-                    tree.addEdge(edge);
-                    tree.increaseTotalWeight(edge.weight);
-                    forest.add(tree);
-                } else {
-                    int notSeenCounter = 0;
-                    for (Tree tree: forest) {
+        public void createForest(HashMap forest) {
+            for (Integer vertex: vertices) {
+                Set<Integer> tree = new HashSet<>();
+                tree.add(vertex);
+                forest.put(vertex, tree);
+            }
+        }
 
-                        if (!tree.contains(edge)) {
-                            notSeenCounter++;
-                        } else {
-                            // means the tree already contained part of the edge
-                            tree.addEdge(edge);
-                            tree.increaseTotalWeight(edge.weight);
+        public int getTotalWeight() {
+            sortEdges(edges);
+            makeSet(vertices);
 
-                            if (tree.nodesInTree.size() == numOfNodes) {
-                                return tree.totalWeight;
-                            }
-                        }
-                    }
-                    if (notSeenCounter == forest.size()) {
-                        Tree newTree = new Tree();
-                        newTree.addEdge(edge);
-                        newTree.increaseTotalWeight(edge.weight);
-                        forest.add(newTree);
-                    }
+            HashMap<Integer, Set<Integer>> forest = new HashMap<>();
+            createForest(forest);
+
+            ArrayList<Edge> mst = new ArrayList<>();
+            for (Edge edge: edges) {
+                Set<Integer> reach1 = forest.get(edge.node1);
+                Set<Integer> reach2 = forest.get(edge.node2);
+                // check var
+                if (reach1.equals(reach2)) {
+                    continue;
+                }
+
+                mst.add(edge);
+                reach1.addAll(reach2);
+                for (Integer i: reach1) {
+                    forest.put(i, reach1);
+                }
+
+                if (reach1.size() == vertices.size()) {
+                    break;
                 }
             }
 
-            return -1;
+            int totalWeight = 0;
+            for (Edge edge: mst) {
+                totalWeight += edge.weight;
+            }
+
+            return totalWeight;
+
         }
 
     }
+
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -143,6 +149,16 @@ public class Kruskal {
 }
 
 /*
+Testcase #2
+4 5
+1 2 1
+3 2 150
+4 3 99
+1 4 100
+3 1 200
+**
+200
+
 4 6
 1 2 5
 1 3 3
